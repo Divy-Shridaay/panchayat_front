@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import {
     Box, Button, Input, Heading, VStack, HStack,
     FormControl, FormLabel, Select, Text, Progress,
@@ -9,8 +11,12 @@ import {
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useToast } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import LoaderSpinner from "../components/LoaderSpinner";
 
 export default function Pedhinamu() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+
     const { t } = useTranslation();
     // const formRef = useRef({});
     const toast = useToast();
@@ -41,6 +47,8 @@ export default function Pedhinamu() {
         mukhyaAge: "",
         heirs: []
     });
+    // Loader for edit mode
+    const [initialLoading, setInitialLoading] = useState(!!id);
 
     const calculateAge = (dob) => {
         if (!dob) return "";
@@ -128,6 +136,88 @@ export default function Pedhinamu() {
         "second_wife",
         "third_wife",
     ];
+
+    useEffect(() => {
+        if (!id) return;  // Create mode, do nothing
+
+        setInitialLoading(true); // ⭐ Start loader immediately
+
+        // LOAD EXISTING DATA
+        fetch(`http://localhost:5000/api/pedhinamu/${id}`)
+            .then(res => res.json())
+            .then((json) => {
+                const p = json.pedhinamu;
+
+                if (!p) {
+                    setInitialLoading(false); // stop loader even if missing
+                    return;
+                }
+                if (p?.hasFullForm) {
+                    navigate(`/pedhinamu/form/${id}?from=records`);
+                    return;
+                }
+                // 1️⃣ PREFILL MUKHYA
+                const mukhya = p.mukhya;
+
+                const formatted = {
+                    mukhyaName: mukhya.name,
+                    mukhyaAge: mukhya.age,
+                    mukhyaDob: mukhya.dob,
+                    mukhyaDobDisplay: mukhya.dobDisplay,
+                    mukhyaIsDeceased: mukhya.isDeceased,
+                    mukhyaDod: mukhya.dod,
+                    mukhyaDodDisplay: mukhya.dodDisplay,
+                    heirs: []
+                };
+
+                // 2️⃣ PREFILL HEIRS
+                formatted.heirs = p.heirs.map(h => ({
+                    ...h,
+                    dob: h.dob || "",
+                    dobDisplay: h.dobDisplay || "",
+                    showSubFamily: true,
+
+                    subFamily: {
+                        spouse: {
+                            ...h.subFamily?.spouse,
+                            dob: h.subFamily?.spouse?.dob || "",
+                            dobDisplay: h.subFamily?.spouse?.dobDisplay || "",
+                        },
+                        children: h.subFamily?.children?.map(c => ({
+                            ...c,
+                            dob: c.dob || "",
+                            dobDisplay: c.dobDisplay || "",
+
+                            spouse: c.spouse
+                                ? {
+                                    ...c.spouse,
+                                    dob: c.spouse.dob || "",
+                                    dobDisplay: c.spouse.dobDisplay || ""
+                                }
+                                : null,
+
+                            children: c.children || []
+                        })) || []
+                    },
+
+                    childCount: h.subFamily?.children?.length || 0
+                }));
+
+                // Update state
+                setForm(formatted);
+                setTotalHeirs(p.heirs.length);
+
+                // 3️⃣ SET CORRECT STEP
+                if (p.heirs.length > 0) setStep(2);
+                else setStep(1);
+
+                setInitialLoading(false);  // ⭐ End loader when done
+            })
+            .catch((err) => {
+                console.error("Failed to load existing pedhinamu:", err);
+                setInitialLoading(false); // stop loader on error
+            });
+    }, [id]);
 
 
     const handleSave = async () => {
@@ -276,9 +366,23 @@ export default function Pedhinamu() {
         });
     }
 
+    if (initialLoading) {
+        return <LoaderSpinner label={t("loading")} />;
+    }
 
     return (
         <Box p={8} maxW="900px" mx="auto" bg="#F8FAF9" minH="100vh">
+            <Button
+                leftIcon={<span>←</span>}
+                colorScheme="green"
+                variant="outline"
+                mb={6}
+                rounded="xl"
+                fontWeight="700"
+                onClick={() => navigate("/pedhinamu/list")}
+            >
+                {t("back")}
+            </Button>
 
             {/* Progress Bar */}
             <Progress
@@ -401,6 +505,8 @@ export default function Pedhinamu() {
                                     setTotalHeirs(c);
                                     generateHeirs(c);
                                 }}
+                                onWheel={(e) => e.target.blur()}
+
                             />
                         </FormControl>
 
@@ -726,6 +832,8 @@ export default function Pedhinamu() {
                                                         }));
                                                         setForm({ ...form, heirs: u });
                                                     }}
+                                                    onWheel={(e) => e.target.blur()}
+
                                                 />
                                             </FormControl>
 
@@ -954,6 +1062,8 @@ export default function Pedhinamu() {
 
                                                                                         setForm({ ...form, heirs: u });
                                                                                     }}
+                                                                                    onWheel={(e) => e.target.blur()}
+
                                                                                 />
                                                                             </FormControl>
 
@@ -1131,7 +1241,7 @@ export default function Pedhinamu() {
                                                                     textAlign="left"
                                                                     width="100%"
                                                                 >
-                                                                    {child.relation || t("select")}
+                                                                    {child.relation ? t(child.relation) : t("select")}
                                                                 </MenuButton>
 
                                                                 <MenuList maxH="250px" overflowY="auto">
@@ -1150,7 +1260,6 @@ export default function Pedhinamu() {
                                                                 </MenuList>
                                                             </Menu>
                                                         </FormControl>
-
                                                         <HStack spacing={3}>
                                                             <FormControl>
                                                                 <FormLabel>{t("childBirthDate")}</FormLabel>

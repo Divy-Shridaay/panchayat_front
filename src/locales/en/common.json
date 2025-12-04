@@ -172,5 +172,9 @@
     "addSpouse": "Add Family Member",
     "hideSpouse": "Hide Family Member",
     "childSpouseDetails": "Family Member Details",
-    "grandchildren": "Grandchildren"
+    "grandchildren": "Grandchildren",
+    "createPedhinamu": "Create Pedhinamu",
+    "createPedhinamuDesc": "Start a new Pedhinamu application",
+    "viewPedhinamu": "View Pedhinamu Records",
+    "viewPedhinamuDesc": "See all saved Pedhinamu records"
 }

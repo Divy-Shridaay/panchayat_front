@@ -99,7 +99,7 @@ export default function FullForm() {
         if (source === "records") {
             navigate("/records");
         } else {
-            navigate("/pedhinamu?step=2");
+            navigate("/pedhinamu/list");
         }
     };
 
@@ -125,162 +125,159 @@ export default function FullForm() {
             const res = await fetch(`http://localhost:5000/api/pedhinamu/${id}`);
             const data = await res.json();
 
-            const pedhinamu = data.pedhinamu;
+            const ped = data.pedhinamu;
             const savedForm = data.form || {};
 
-            if (pedhinamu) {
-                // const savedForm = formRef.current || {};
+            if (!ped) return;
 
-                /* ----------------------------------------------------
-                   1. BASIC VALUES FROM BACKEND
-                ---------------------------------------------------- */
-                const heirsCount = pedhinamu.heirs.length;
+            const mukhya = ped.mukhya || {};
+            const heirs = ped.heirs || [];
 
-                const mukhya = pedhinamu.mukhya || {};
-                const heirs = pedhinamu.heirs || [];
+            /* ----------------------------------------------------
+               COUNT DECEASED IN ENTIRE FAMILY TREE (ALL LEVELS)
+            ---------------------------------------------------- */
+            let deceasedCount = mukhya.isDeceased ? 1 : 0;
 
-                /* ----------------------------------------------------
-                   2. AUTO-FILL DECEASED PERSON DETAILS
-                ---------------------------------------------------- */
-                const deceasedPersonName = mukhya.name || "";
-                const deceasedPersonAge = mukhya.age || "";
-                const deceasedPersonDate = mukhya.dod || "";
-                const heirType = mukhya.isDeceased ? "deceased" : "alive";
+            heirs.forEach(h => {
+                if (h.isDeceased) deceasedCount++;
 
-                /* ----------------------------------------------------
-                   3. TOTAL DECEASED COUNT
-                ---------------------------------------------------- */
-                let deceasedCount = 0;
-                if (mukhya.isDeceased) deceasedCount++;
-                deceasedCount += heirs.filter(h => h.isDeceased).length;
+                if (h.subFamily?.spouse?.isDeceased) deceasedCount++;
 
-                /* ----------------------------------------------------
-                   4. AUTO-FILL APPLICANT (ONLY IF EMPTY)
-                ---------------------------------------------------- */
-                let applicantName = savedForm.applicantName?.trim() || "";
-                let applicantSurname = savedForm.applicantSurname?.trim() || "";
-                let applicantMobile = savedForm.applicantMobile?.trim() || "";
-                let applicantAadhaar = savedForm.applicantAadhaar?.trim() || "";
+                (h.subFamily?.children || []).forEach(c => {
+                    if (c.isDeceased) deceasedCount++;
 
-                if (!applicantName) {
-                    applicantName = mukhya.name || "";
-                }
+                    if (c.spouse?.isDeceased) deceasedCount++;
 
-                if (!applicantSurname) {
-                    const parts = (mukhya.name || "").trim().split(" ");
-                    if (parts.length > 1) {
-                        applicantSurname = parts[parts.length - 1];
-                    }
-                }
+                    (c.children || []).forEach(gc => {
+                        if (gc.isDeceased) deceasedCount++;
+                    });
+                });
+            });
 
-                if (!applicantMobile) {
-                    applicantMobile = mukhya.mobile || "";
-                }
+            /* ----------------------------------------------------
+               DECEASED PERSON NAME (if mukhya alive → heir's name)
+            ---------------------------------------------------- */
+            const deceasedPersonName = mukhya.isDeceased
+                ? mukhya.name
+                : heirs.find(h => h.isDeceased)?.name || "";
 
-                if (!applicantAadhaar) {
-                    applicantAadhaar = "";
-                }
+            /* ----------------------------------------------------
+               AUTOFILL APPLICANT (if not already saved)
+            ---------------------------------------------------- */
+            const applicantName = savedForm.applicantName || mukhya.name || "";
+            const applicantSurname = savedForm.applicantSurname ||
+                (mukhya.name ? mukhya.name.split(" ").slice(-1)[0] : "");
+            const applicantMobile = savedForm.applicantMobile || mukhya.mobile || "";
+            const applicantAadhaar = savedForm.applicantAadhaar || "";
 
-                /* ----------------------------------------------------
-                   5. ALWAYS 3 EMPTY PANCH ROWS
-                ---------------------------------------------------- */
-                const blankPanch = [
-                    { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
-                    { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
-                    { name: "", age: "", occupation: "", aadhaar: "", mobile: "" }
-                ];
+            /* ----------------------------------------------------
+               MAP ALL DOB / DOB DISPLAY / DOD / DOD DISPLAY
+               For: heirs, spouses, children, grandchildren
+            ---------------------------------------------------- */
+            const mappedHeirs = heirs.map(h => ({
+                ...h,
+                dob: h.dob || "",
+                dobDisplay: h.dobDisplay || "",
+                dod: h.dod || "",
+                dodDisplay: h.dodDisplay || "",
 
-                /* ----------------------------------------------------
-                   6. FORMAT MOBILE/AADHAAR
-                ---------------------------------------------------- */
-                const applicantMobileFormatted = applicantMobile ? formatMobile(applicantMobile) : "";
-                const applicantAadhaarFormatted = applicantAadhaar ? formatAadhaar(applicantAadhaar) : "";
-
-                const formattedPanch = blankPanch.map(p => ({
-                    ...p,
-                    mobile: p.mobile ? formatMobile(p.mobile) : "",
-                    aadhaar: p.aadhaar ? formatAadhaar(p.aadhaar) : ""
-                }));
-
-                /* ----------------------------------------------------
-                   7. FINAL FORM SET
-                ---------------------------------------------------- */
-                setForm(prev => ({
-                    ...prev,
-                    ...savedForm,
-
-                    /* AUTO-FILLED APPLICANT */
-                    applicantName,
-                    applicantSurname,
-                    applicantMobile: applicantMobileFormatted,
-                    applicantAadhaar: applicantAadhaarFormatted,
-
-                    /* AUTO-FILLED DECEASED PERSON SECTION */
-                    deceasedPersonName: deceasedPersonName,
-                    deceasedPersonDate: deceasedPersonDate || "",
-                    deceasedPersonAge: deceasedPersonAge || "",
-                    varasdarType: heirType,     // deceased or alive
-
-                    /* PANCH — ALWAYS 3 BLANK */
-                    panch: formattedPanch,
-
-                    /* MUKHYA */
-                    mukhyaName: mukhya.name || "",
-                    mukhyaAge: mukhya.age || "",
-
-                    /* HEIRS — WITH ALL DEATH DETAILS MAPPED */
-                    heirs: heirs.map(h => ({
-                        ...h,
-                        dod: h.dod || "",
-                        dodDisplay: h.dod ? formatDisplayDate(h.dod.split("-").reverse().join("")) : "",
-
-                        subFamily: {
-                            spouse: {
-                                ...h.subFamily?.spouse,
-                                dod: h.subFamily?.spouse?.dod || "",
-                                dodDisplay: h.subFamily?.spouse?.dod
-                                    ? formatDisplayDate(h.subFamily.spouse.dod.split("-").reverse().join(""))
-                                    : "",
-                            },
-
-                            children: h.subFamily?.children?.map(c => ({
-                                ...c,
-                                dod: c.dod || "",
-                                dodDisplay: c.dod ? formatDisplayDate(c.dod.split("-").reverse().join("")) : "",
-
-                                spouse: c.spouse
-                                    ? {
-                                        ...c.spouse,
-                                        dod: c.spouse.dod || "",
-                                        dodDisplay: c.spouse.dod
-                                            ? formatDisplayDate(c.spouse.dod.split("-").reverse().join(""))
-                                            : "",
-                                    }
-                                    : null,
-
-                                children: (c.children || []).map(gc => ({
-                                    ...gc,
-                                    dod: gc.dod || "",
-                                    dodDisplay: gc.dod ? formatDisplayDate(gc.dod.split("-").reverse().join("")) : "",
-                                })),
-                            })) || []
+                subFamily: {
+                    spouse: h.subFamily?.spouse
+                        ? {
+                            ...h.subFamily.spouse,
+                            dob: h.subFamily.spouse.dob || "",
+                            dobDisplay: h.subFamily.spouse.dobDisplay || "",
+                            dod: h.subFamily.spouse.dod || "",
+                            dodDisplay: h.subFamily.spouse.dodDisplay || "",
                         }
-                    })),
+                        : {},
 
+                    children: (h.subFamily?.children || []).map(c => ({
+                        ...c,
+                        dob: c.dob || "",
+                        dobDisplay: c.dobDisplay || "",
+                        dod: c.dod || "",
+                        dodDisplay: c.dodDisplay || "",
 
-                    /* COUNTS */
-                    totalHeirsCount: heirsCount,
-                    totalDeceasedCount: deceasedCount
-                }));
+                        spouse: c.spouse
+                            ? {
+                                ...c.spouse,
+                                dob: c.spouse.dob || "",
+                                dobDisplay: c.spouse.dobDisplay || "",
+                                dod: c.spouse.dod || "",
+                                dodDisplay: c.spouse.dodDisplay || "",
+                            }
+                            : null,
 
-                setLoading(false);
-            }
+                        children: (c.children || []).map(gc => ({
+                            ...gc,
+                            dob: gc.dob || "",
+                            dobDisplay: gc.dobDisplay || "",
+                            dod: gc.dod || "",
+                            dodDisplay: gc.dodDisplay || "",
+                        }))
+                    }))
+                }
+            }));
 
+            /* ----------------------------------------------------
+               PANCH – ALWAYS 3 EMPTY ROWS
+            ---------------------------------------------------- */
+            const blankPanch = [
+                { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
+                { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
+                { name: "", age: "", occupation: "", aadhaar: "", mobile: "" }
+            ];
 
+            /* ----------------------------------------------------
+               FINAL SET FORM
+            ---------------------------------------------------- */
+            setForm(prev => ({
+                ...prev,
+                ...savedForm,
+
+                /* Applicant autofill */
+                applicantName,
+                applicantSurname,
+                applicantMobile,
+                applicantAadhaar,
+
+                /* Deceased person */
+                deceasedPersonName,
+                deceasedPersonDate: mukhya.dod || "",
+                deceasedPersonAge: mukhya.age || "",
+                varasdarType: mukhya.isDeceased ? "deceased" : "alive",
+
+                /* Family */
+                mukhyaName: mukhya.name || "",
+                mukhyaAge: mukhya.age || "",
+                heirs: mappedHeirs,
+
+                /* Counts */
+                totalHeirsCount: heirs.length,
+                totalDeceasedCount: deceasedCount,
+
+                /* Panch */
+                panch:
+                    savedForm.panch && savedForm.panch.length > 0
+                        ? savedForm.panch.map(p => ({
+                            name: p.name || "",
+                            age: p.age || "",
+                            occupation: p.occupation || "",
+                            aadhaar: p.aadhaar || "",
+                            mobile: p.mobile || ""
+                        }))
+                        : [
+                            { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
+                            { name: "", age: "", occupation: "", aadhaar: "", mobile: "" },
+                            { name: "", age: "", occupation: "", aadhaar: "", mobile: "" }
+                        ]
+            }));
 
             setLoading(false);
         })();
     }, []);
+
 
     const handleSave = async () => {
         const errors = [];
