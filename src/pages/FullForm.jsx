@@ -313,6 +313,40 @@ export default function FullForm() {
             errors.push(t("invalidAadhaar"));
             invalid.applicantAadhaar = t("invalidAadhaar");
         }
+        // -----------------------------
+        // Aadhaar Duplicate Validation
+        // -----------------------------
+
+        const applicantA = form.applicantAadhaar.replace(/\D/g, "");
+        const panchAadhaars = form.panch.map(p => p.aadhaar.replace(/\D/g, ""));
+
+        // CHECK 1: APPLICANT Aadhaar should NOT match any PANCH Aadhaar
+        if (panchAadhaars.includes(applicantA)) {
+            toast({
+                title: t("error"),
+                description: t("aadhaarDuplicateApplicant"),
+                status: "error",
+                duration: 3000,
+                position: "top"
+            });
+            return;
+        }
+
+        // CHECK 2: PANCH Aadhaar must be UNIQUE
+        const duplicatePanchAadhar = panchAadhaars.find((a, i) =>
+            a && panchAadhaars.indexOf(a) !== i
+        );
+
+        if (duplicatePanchAadhar) {
+            toast({
+                title: t("error"),
+                description: t("aadhaarDuplicatePanch"),
+                status: "error",
+                duration: 3000,
+                position: "top"
+            });
+            return;
+        }
 
         // -----------------------------
         //  Panch Validation

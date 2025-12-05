@@ -45,6 +45,7 @@ export default function PedhinamuList() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [refresh, setRefresh] = useState(0);
 
 
 
@@ -54,26 +55,25 @@ export default function PedhinamuList() {
   const fetchList = async (page = 1) => {
     try {
       setLoading(true);
-
-      const res = await fetch(
-        `http://localhost:5000/api/pedhinamu?page=${page}&limit=10`
-      );
-
+      const res = await fetch(`http://localhost:5000/api/pedhinamu?page=${page}&limit=10`);
       const json = await res.json();
 
       setList(json.data || []);
       setTotalPages(json.totalPages || 1);
       setLoading(false);
 
+      return json.data || [];  // 🔥 RETURN NEW LIST
     } catch (err) {
       console.error(err);
       setLoading(false);
+      return [];
     }
   };
 
+
   useEffect(() => {
     fetchList(currentPage);
-  }, [currentPage]);
+  }, [currentPage, refresh]);
 
 
 
@@ -82,10 +82,9 @@ export default function PedhinamuList() {
      ------------------------------------------------- */
   const deleteRecord = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/pedhinamu/${deleteId}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`http://localhost:5000/api/pedhinamu/${deleteId}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) throw new Error();
 
@@ -97,7 +96,13 @@ export default function PedhinamuList() {
       });
 
       onClose();
-      fetchList(currentPage);
+
+      const updatedList = await fetchList(currentPage);
+
+      // 🔥 CHECK UPDATED LIST, not old list
+      if (updatedList.length === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
 
     } catch (err) {
       toast({
@@ -108,8 +113,6 @@ export default function PedhinamuList() {
       });
     }
   };
-
-
 
   return (
     <Box bg="#F2F6F3" minH="100vh" p={10}>
@@ -256,19 +259,88 @@ export default function PedhinamuList() {
 
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{t("deleteTitle")}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{t("deleteConfirmFull")}</ModalBody>
+      <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="scale">
+        <ModalOverlay bg="rgba(0,0,0,0.45)" />
 
-          <ModalFooter>
-            <Button colorScheme="red" onClick={deleteRecord}>
-              {t("delete")}
-            </Button>
-            <Button ml={3} onClick={onClose}>
+        <ModalContent
+          rounded="2xl"
+          p={2}
+          bg="white"
+          shadow="2xl"
+          border="1px solid #f2dede"
+        >
+          <ModalCloseButton />
+
+          {/* Warning Icon */}
+          <Flex justify="center" mt={6}>
+            <Flex
+              bg="red.100"
+              w="70px"
+              h="70px"
+              rounded="full"
+              align="center"
+              justify="center"
+              border="2px solid #fc8181"
+            >
+              <Text fontSize="4xl" color="red.600">⚠️</Text>
+            </Flex>
+          </Flex>
+
+          {/* Header */}
+          <ModalHeader
+            textAlign="center"
+            mt={4}
+            fontSize="2xl"
+            fontWeight="800"
+            color="red.600"
+          >
+            {t("deleteTitle")}
+          </ModalHeader>
+
+          {/* Main Text */}
+          <ModalBody pb={6}>
+            <Text
+              fontSize="lg"
+              textAlign="center"
+              color="gray.700"
+              px={4}
+              lineHeight="1.7"
+            >
+              {t("deleteConfirmFull")}
+            </Text>
+          </ModalBody>
+          <ModalBody pb={6}>
+            <Text
+              fontSize="lg"
+              textAlign="center"
+              color="gray.700"
+              px={4}
+              lineHeight="1.7"
+            >
+              {t("deleteAffectsBoth")}
+            </Text>
+          </ModalBody>
+
+          {/* Action Buttons */}
+          <ModalFooter justifyContent="center" gap={4} pb={6}>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              rounded="full"
+              px={8}
+              size="lg"
+            >
               {t("cancel")}
+            </Button>
+
+            <Button
+              colorScheme="red"
+              rounded="full"
+              px={8}
+              size="lg"
+              onClick={deleteRecord}
+            >
+              {t("delete")}
             </Button>
           </ModalFooter>
         </ModalContent>

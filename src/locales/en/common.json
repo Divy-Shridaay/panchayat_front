@@ -176,5 +176,18 @@
     "createPedhinamu": "Create Pedhinamu",
     "createPedhinamuDesc": "Start a new Pedhinamu application",
     "viewPedhinamu": "View Pedhinamu Records",
-    "viewPedhinamuDesc": "See all saved Pedhinamu records"
+    "viewPedhinamuDesc": "See all saved Pedhinamu records",
+    "aadhaarDuplicateApplicant": "Applicant Aadhaar cannot be the same as any Panch Aadhaar",
+    "aadhaarDuplicatePanch": "Two Panch members cannot have the same Aadhaar number",
+    "dobOrAgeRequired": "Enter either Birth Date OR Age",
+    "invalidDate": "Please enter a valid date in DD/MM/YYYY format",
+    "invalidAge": "Please enter a valid numeric age",
+    "orText": "OR",
+    "deleteAffectsBoth": "Deleting this record will remove it from both Pedhinamu and Certificates.",
+    "relationRequired": "Relation is required",
+    "heirRelationRequired": "Please select relation for heir",
+    "childRelationRequired": "Please select relation for child",
+    "spouseRelationRequired": "Please select relation for spouse",
+    "grandchildRelationRequired": "Please select relation for grandchild",
+    "updateSuccess": "Updated successfully"
 }

@@ -117,7 +117,7 @@
     "enterKhataNo": "ખાતા નંબર દાખલ કરો",
     "enterAddress": "સરનામું દાખલ કરો",
     "printPedhinamu": "પેઢીનામું પ્રિન્ટ કરો",
-    "birthDateAge": "જન્મ તારીખ અને ઉંમર",
+    "birthDateAge": "જન્મ તારીખ અથવા ઉંમર",
     "son": "પુત્ર",
     "daughter": "પુત્રી",
     "grandson": "પૌત્ર",
@@ -176,5 +176,18 @@
     "createPedhinamu": "નવું પેઢીનામું બનાવો",
     "createPedhinamuDesc": "અહીંથી નવું પેઢીનામું બનાવવાનું શરૂ કરો",
     "viewPedhinamu": "પેઢીનામું જુઓ",
-    "viewPedhinamuDesc": "બધા પેઢીનામા રેકોર્ડ અહીંથી જુઓ"
+    "viewPedhinamuDesc": "બધા પેઢીનામા રેકોર્ડ અહીંથી જુઓ",
+    "aadhaarDuplicateApplicant": "અરજદાર અને પંચનો આધાર નંબર એકસરખો ન હોવો જોઈએ",
+    "aadhaarDuplicatePanch": "બે પંચનો આધાર નંબર એકસરખો ન હોવો જોઈએ",
+    "dobOrAgeRequired": "જન્મ તારીખ અથવા ઉંમર પૈકી એક દાખલ કરો",
+    "invalidDate": "કૃપા કરીને સાચી તારીખ (DD/MM/YYYY) દાખલ કરો",
+    "invalidAge": "કૃપા કરીને માન્ય ઉંમર (ફક્ત અંક) દાખલ કરો",
+    "orText": "અથવા",
+    "deleteAffectsBoth": "આ રેકોર્ડ કાઢી નાખવાથી પેઢીનામું અને પ્રમાણપત્ર બન્નેમાંથી દૂર થશે.",
+    "relationRequired": "સંબંધી પસંદ કરવો જરૂરી છે",
+    "heirRelationRequired": "વારસદાર માટે સંબંધી પસંદ કરો",
+    "childRelationRequired": "બાળક માટે સંબંધી પસંદ કરો",
+    "spouseRelationRequired": "પત્ની/પતિ માટે સંબંધી પસંદ કરો",
+    "grandchildRelationRequired": "પૌત્ર/પૌત્રી માટે સંબંધી પસંદ કરો",
+    "updateSuccess": "માહિતી સફળતાપૂર્વક સુધારાઈ"
 }

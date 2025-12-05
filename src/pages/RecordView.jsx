@@ -457,51 +457,52 @@ export default function RecordView() {
             function buildNode(person) {
                 if (!person) return null;
 
-                const children = [];
+                // Build this node
+                const node = {
+                    name: person.name,
+                    relation: relationToGujarati(person.relation),
+                    isDeceased: person.isDeceased || false,
+                    children: []
+                };
 
-                // SPOUSE
-                if (person.subFamily?.spouse?.name?.trim()) {
-                    children.push({
-                        name: person.subFamily.spouse.name,
-                        relation: relationToGujarati(person.subFamily.spouse.relation || "spouse"),
-                        isDeceased: person.subFamily.spouse.isDeceased || false,
+                /* --------------------------------------
+                   1️⃣ ADD SPOUSE (works for ALL levels)
+                -------------------------------------- */
+                const spouse =
+                    person.spouse ||          // child.spouse OR grandchild spouse
+                    person.subFamily?.spouse; // heir spouse
+
+                if (spouse?.name?.trim()) {
+                    node.children.push({
+                        name: spouse.name,
+                        relation: relationToGujarati(spouse.relation),
+                        isDeceased: spouse.isDeceased || false,
                         children: []
                     });
                 }
 
-                // 1️⃣ CHILDREN FROM subFamily.children (your HEIRS children)
-                if (person.subFamily?.children?.length > 0) {
-                    person.subFamily.children.forEach((c) => {
-                        children.push(buildNode(c));
-                    });
-                }
+                /* --------------------------------------
+                   2️⃣ ADD CHILDREN (correct handling)
+                -------------------------------------- */
+                const personChildren =
+                    person.subFamily?.children ||   // heirs → children
+                    person.children ||              // children → grandchildren
+                    [];
 
-                // 2️⃣ CHILDREN FROM person.children (your GRANDCHILDREN structure)
-                if (person.children?.length > 0) {
-                    person.children.forEach((c) => {
-                        children.push(buildNode(c));
-                    });
-                }
+                personChildren.forEach(c => {
+                    node.children.push(buildNode(c));
+                });
 
-                return {
-                    name: person.name,
-                    relation: relationToGujarati(person.relation),
-                    isDeceased: person.isDeceased || false,
-                    children
-                };
+                return node;
             }
 
             const rootPerson = buildNode({
                 ...pedhinamu.mukhya,
                 relation: "mukhya",
-                subFamily: {
-                    spouse: pedhinamu.mukhya.spouse,
-                    children: pedhinamu.heirs.map(h => ({
-                        ...h,
-                        subFamily: h.subFamily || { spouse: null, children: [] }
-                    }))
-                }
+                spouse: pedhinamu.mukhya.spouse || null,  // if stored
+                children: pedhinamu.heirs                 // main heirs become children of root
             });
+
 
 
 

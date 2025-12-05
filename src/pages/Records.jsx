@@ -41,11 +41,12 @@ export default function Records() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [refresh, setRefresh] = useState(0);
 
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [currentPage]);
+  }, [currentPage, refresh]);
 
   const fetchData = async (page) => {
     setLoading(true);
@@ -55,7 +56,10 @@ export default function Records() {
     setList(json.data);
     setTotalPages(json.totalPages);
     setLoading(false);
+
+    return json.data;  // 🔥 RETURN UPDATED LIST
   };
+
 
 
 
@@ -71,23 +75,28 @@ export default function Records() {
         title: t("deleted"),
         status: "success",
         duration: 3000,
-        isClosable: true,
         position: "top",
       });
 
-      setList(list.filter((x) => x._id !== deleteId));
-      onClose(); // close modal
+      const updatedList = await fetchData(currentPage);
+
+      // 🔥 CHECK NEW LIST instead of old "list" state
+      if (updatedList.length === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+
+      onClose();
 
     } catch (err) {
       toast({
         title: t("deleteFailed"),
         status: "error",
         duration: 3000,
-        isClosable: true,
         position: "top",
       });
     }
   };
+
 
 
   return (
@@ -255,6 +264,17 @@ export default function Records() {
               lineHeight="1.7"
             >
               {t("deleteConfirmFull")}
+            </Text>
+          </ModalBody>
+          <ModalBody pb={6}>
+            <Text
+              fontSize="lg"
+              textAlign="center"
+              color="gray.700"
+              px={4}
+              lineHeight="1.7"
+            >
+              {t("deleteAffectsBoth")}
             </Text>
           </ModalBody>
 
