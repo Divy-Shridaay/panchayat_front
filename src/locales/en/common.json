@@ -189,5 +189,6 @@
     "childRelationRequired": "Please select relation for child",
     "spouseRelationRequired": "Please select relation for spouse",
     "grandchildRelationRequired": "Please select relation for grandchild",
-    "updateSuccess": "Updated successfully"
+    "updateSuccess": "Updated successfully",
+    "noDeceasedFound": "No deceased members found in the family"
 }

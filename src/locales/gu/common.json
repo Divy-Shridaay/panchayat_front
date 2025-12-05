@@ -189,5 +189,6 @@
     "childRelationRequired": "બાળક માટે સંબંધી પસંદ કરો",
     "spouseRelationRequired": "પત્ની/પતિ માટે સંબંધી પસંદ કરો",
     "grandchildRelationRequired": "પૌત્ર/પૌત્રી માટે સંબંધી પસંદ કરો",
-    "updateSuccess": "માહિતી સફળતાપૂર્વક સુધારાઈ"
+    "updateSuccess": "માહિતી સફળતાપૂર્વક સુધારાઈ",
+    "noDeceasedFound": "કુટુંબમાં કોઈ મૃત્યુ પામેલ સભ્ય મળ્યો નથી"
 }

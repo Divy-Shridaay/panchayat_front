@@ -56,9 +56,10 @@ export default function FullForm() {
         applicantMobile: "",
         applicantAadhaar: "",
         applicationDate: "",
-        deceasedPersonName: "",
-        deceasedPersonDate: "",
-        deceasedPersonAge: "",
+        // deceasedPersonName: "",
+        // deceasedPersonDate: "",
+        // deceasedPersonAge: "",
+        deceasedPersons: [],
         notaryName: "",
         notaryBookNo: "",
         notaryPageNo: "",
@@ -229,6 +230,44 @@ export default function FullForm() {
                 { name: "", age: "", occupation: "", aadhaar: "", mobile: "" }
             ];
 
+
+            function getAllDeceased(mukhya, heirs) {
+                const list = [];
+
+                if (mukhya.isDeceased) list.push(mukhya);
+
+                heirs.forEach(h => {
+                    if (h.isDeceased) list.push(h);
+
+                    if (h.subFamily?.spouse?.isDeceased) list.push(h.subFamily.spouse);
+
+                    (h.subFamily?.children || []).forEach(c => {
+                        if (c.isDeceased) list.push(c);
+
+                        if (c.spouse?.isDeceased) list.push(c.spouse);
+
+                        (c.children || []).forEach(gc => {
+                            if (gc.isDeceased) list.push(gc);
+                        });
+                    });
+                });
+
+                return list;
+            }
+
+
+            const deceasedList = getAllDeceased(mukhya, heirs);
+            function toISO(dateStr) {
+                if (!dateStr) return "";
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+                    const [dd, mm, yyyy] = dateStr.split("/");
+                    return `${yyyy}-${mm}-${dd}`;
+                }
+                return "";
+            }
+
+
             /* ----------------------------------------------------
                FINAL SET FORM
             ---------------------------------------------------- */
@@ -242,11 +281,17 @@ export default function FullForm() {
                 applicantMobile,
                 applicantAadhaar,
 
-                /* Deceased person */
-                deceasedPersonName,
-                deceasedPersonDate: mukhya.dod || "",
-                deceasedPersonAge: mukhya.age || "",
-                varasdarType: mukhya.isDeceased ? "deceased" : "alive",
+                /* Deceased persons (supports multiple) */
+                deceasedPersons: deceasedList.map(p => ({
+                    name: p.name,
+                    age: p.age || "",
+                    date: toISO(p.dodDisplay || p.dod || "")
+                })),
+
+                /* Varasdar type = if at least 1 deceased exists */
+                varasdarType: deceasedList.length > 0 ? "deceased" : "alive",
+
+
 
                 /* Family */
                 mukhyaName: mukhya.name || "",
@@ -692,36 +737,72 @@ export default function FullForm() {
             {/* DECEASED — NO STAR, NO REQUIRED MARKS */}
             <Heading {...sectionTitle}>{t("deceasedDetails")}</Heading>
             <Box {...boxStyle}>
-                <FormControl mb={3}>
-                    <FormLabel fontWeight="600">{t("deceasedPersonName")}</FormLabel>
-                    <Input
-                        {...inputStyle}
-                        value={form.deceasedPersonName}
-                        onChange={(e) => handleChange("deceasedPersonName", e.target.value)}
-                    />
-                </FormControl>
+                {form.deceasedPersons?.length === 0 && (
+                    <Text color="gray.600">{t("noDeceasedFound")}</Text>
+                )}
 
-                <HStack spacing={6}>
-                    <FormControl>
-                        <FormLabel fontWeight="600">{t("deathDate")}</FormLabel>
-                        <Input
-                            {...inputStyle}
-                            type="date"
-                            value={form.deceasedPersonDate}
-                            onChange={(e) => handleChange("deceasedPersonDate", e.target.value)}
-                        />
-                    </FormControl>
+                {form.deceasedPersons?.map((p, i) => (
+                    <Box
+                        key={i}
+                        p={4}
+                        mb={4}
+                        borderWidth="1px"
+                        rounded="lg"
+                        bg="#F8FBF9"
+                        borderColor="#DDEDE2"
+                    >
+                        <Text fontWeight="700" mb={3}>
+                            {t("deceased")} #{i + 1}
+                        </Text>
 
-                    <FormControl>
-                        <FormLabel fontWeight="600">{t("deceasedPersonAge")}</FormLabel>
-                        <Input
-                            {...inputStyle}
-                            value={form.deceasedPersonAge}
-                            onChange={(e) => handleChange("deceasedPersonAge", e.target.value)}
-                        />
-                    </FormControl>
-                </HStack>
+                        {/* NAME */}
+                        <FormControl mb={3}>
+                            <FormLabel fontWeight="600">{t("deceasedPersonName")}</FormLabel>
+                            <Input
+                                {...inputStyle}
+                                value={p.name}
+                                onChange={(e) => {
+                                    const updated = [...form.deceasedPersons];
+                                    updated[i].name = e.target.value;
+                                    handleChange("deceasedPersons", updated);
+                                }}
+                            />
+                        </FormControl>
+
+                        <HStack spacing={6}>
+                            {/* DATE */}
+                            <FormControl>
+                                <FormLabel fontWeight="600">{t("deathDate")}</FormLabel>
+                                <Input
+                                    {...inputStyle}
+                                    type="date"
+                                    value={p.date}
+                                    onChange={(e) => {
+                                        const updated = [...form.deceasedPersons];
+                                        updated[i].date = e.target.value;
+                                        handleChange("deceasedPersons", updated);
+                                    }}
+                                />
+                            </FormControl>
+
+                            {/* AGE */}
+                            <FormControl>
+                                <FormLabel fontWeight="600">{t("deceasedPersonAge")}</FormLabel>
+                                <Input
+                                    {...inputStyle}
+                                    value={p.age}
+                                    onChange={(e) => {
+                                        const updated = [...form.deceasedPersons];
+                                        updated[i].age = e.target.value;
+                                        handleChange("deceasedPersons", updated);
+                                    }}
+                                />
+                            </FormControl>
+                        </HStack>
+                    </Box>
+                ))}
             </Box>
+
 
             {/* NOTARY */}
             <Heading {...sectionTitle}>{t("notaryDetails")}</Heading>
